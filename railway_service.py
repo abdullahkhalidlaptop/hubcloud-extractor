@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Render Playwright service (run on Render). Exposes:
+Railway Playwright service (run on Railway). Exposes:
  - GET /api/hubcloud?url=...
  - GET /health        -> 200 if Playwright/browser initialized
  - POST /wake         -> triggers lazy Playwright start in background (returns 202)
@@ -22,7 +22,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from playwright.async_api import async_playwright, Browser, Playwright
 
-app = FastAPI(title="Render Playwright Hubcloud Service")
+app = FastAPI(title="Railway Playwright Hubcloud Service")
 
 # editable timeouts
 HEAD_TIMEOUT = 3
@@ -365,7 +365,7 @@ async def api_hubcloud(url: Optional[str] = Query(None, alias="url"), force: Opt
             asyncio.create_task(ensure_playwright_started())
             return JSONResponse(status_code=202, content={
                 "status": "waking",
-                "message": "Render instance is waking. Retry the request after ~30s."
+                "message": "Railway instance is waking. Retry the request after ~30s."
             })
         raise HTTPException(status_code=500, detail=str(e))
 
