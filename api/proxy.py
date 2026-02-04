@@ -1,4 +1,4 @@
-# Vercel proxy function - forwards to Render service and handles wake/health.
+# Vercel proxy function - forwards to Railway service and handles wake/health.
 import os
 import urllib.parse
 import asyncio
@@ -8,29 +8,29 @@ from fastapi.responses import JSONResponse
 from typing import Optional
 
 app = FastAPI()
-RENDER_URL = os.getenv("RENDER_SERVICE_URL")  # set this in Vercel to your Render URL, e.g. https://your-app.onrender.com
+RAILWAY_URL = os.getenv("RAILWAY_SERVICE_URL")  # set this in Vercel to your Railway URL, e.g. https://<your-railway-app>.up.railway.app
 SUGGESTED_RETRY_AFTER = int(os.getenv("RETRY_AFTER", "30"))
 MAX_BLOCK_WAIT = int(os.getenv("MAX_BLOCK_WAIT", "20"))
 
-if not RENDER_URL:
-    print("Warning: RENDER_SERVICE_URL not set. Set it in Vercel environment variables.")
+if not RAILWAY_URL:
+    print("Warning: RAILWAY_SERVICE_URL not set. Set it in Vercel environment variables.")
 
 async def forward_request(path: str, params: dict, timeout: float = 15.0):
-    url = RENDER_URL.rstrip("/") + path
+    url = RAILWAY_URL.rstrip("/") + path
     async with httpx.AsyncClient(timeout=timeout) as client:
         r = await client.get(url, params=params)
         return r
 
 async def post_wake(timeout: float = 10.0):
-    url = RENDER_URL.rstrip("/") + "/wake"
+    url = RAILWAY_URL.rstrip("/") + "/wake"
     async with httpx.AsyncClient(timeout=timeout) as client:
         r = await client.post(url)
         return r
 
 @app.get("/api/hubcloud")
 async def proxy_get(url: Optional[str] = Query(None, alias="url"), force: Optional[bool] = Query(False), wait: Optional[bool] = Query(False)):
-    if not RENDER_URL:
-        raise HTTPException(status_code=500, detail="RENDER_SERVICE_URL not configured")
+    if not RAILWAY_URL:
+        raise HTTPException(status_code=500, detail="RAILWAY_SERVICE_URL not configured")
     if not url:
         raise HTTPException(status_code=400, detail="Missing 'url' query parameter")
 
@@ -48,7 +48,7 @@ async def proxy_get(url: Optional[str] = Query(None, alias="url"), force: Option
     if r is not None and r.status_code == 200:
         return JSONResponse(status_code=200, content=r.json())
 
-    # ask Render to wake
+    # ask Railway to wake
     try:
         await post_wake()
     except Exception:
@@ -70,12 +70,12 @@ async def proxy_get(url: Optional[str] = Query(None, alias="url"), force: Option
                 pass
         return JSONResponse(status_code=202, content={
             "status": "waking",
-            "message": f"Render is starting. Retry after {SUGGESTED_RETRY_AFTER} seconds."
+            "message": f"Railway is starting. Retry after {SUGGESTED_RETRY_AFTER} seconds."
         }, headers={"Retry-After": str(SUGGESTED_RETRY_AFTER)})
 
     return JSONResponse(status_code=202, content={
         "status": "waking",
-        "message": f"Render is starting. Retry after {SUGGESTED_RETRY_AFTER} seconds."
+        "message": f"Railway is starting. Retry after {SUGGESTED_RETRY_AFTER} seconds."
     }, headers={"Retry-After": str(SUGGESTED_RETRY_AFTER)})
 
 
