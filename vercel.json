@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/*.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/api/hubcloud", "dest": "/api/proxy.py" },
+    { "src": "/api/hubcloud/(.*)", "dest": "/api/proxy.py" }
+  ]
+}
